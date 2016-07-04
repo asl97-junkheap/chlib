@@ -20,6 +20,9 @@ import random
 import threading
 import queue
 
+import ping
+import sock
+
 ################################
 #Get server number
 ################################
@@ -130,7 +133,7 @@ class Group(object):
 		self.time = None
 		self.pm = pm
 		self.chSocket = None
-		self.wqueue = queue.Queue()
+		self.wqueue = self.manager.sockmanager.write_queue
 		self.manager.eArray[self.name] = list()
 		self.loginFail = False
 		self.uid = str(int(random.randrange(10 ** 15, (10 ** 16) - 1)))
@@ -174,8 +177,8 @@ class Group(object):
 			self.sendCmd("tlogin", self.pmAuth, "2", self.uid, firstcmd=True)
 		self.connected = True
 		self.manager.connected = True
-		Event(self.manager, self, self.name, 0.1, 0, "manage")
-		Event(self.manager, self, "ping", 20, 0, "ping")
+		self.manager.eArray[self.name].append(self.manager.sockmanager.addSock(self.chSocket, self))
+		self.manager.eArray[self.name].append(ping.add(self.ping))
 
 	def manage(self):
 		rbuf = b""
@@ -222,9 +225,9 @@ class Group(object):
 		'''Send data to socket'''
 		args = [str(i) for i in args]
 		if not firstcmd:
-			self.wqueue.put_nowait(bytes(':'.join(args)+"\r\n\x00", "utf-8"))
+			self.wqueue.put((self.chSocket, bytes(':'.join(args)+"\r\n\x00", "utf-8")))
 		else:
-			self.wqueue.put_nowait(bytes(':'.join(args)+"\x00", "utf-8"))
+			self.wqueue.put((self.chSocket, bytes(':'.join(args)+"\x00", "utf-8")))
 
 	def getBanList(self):
 		'''Retreive ban list'''
@@ -642,6 +645,7 @@ class ConnectionManager(object):
 		self.prefix = None
 		self.acid = Digest(self)
 		self.connected = any([x.connected for x in self.cArray])
+		self.sockmanager = sock.SockManager(self)
 
 	def stop(self):
 		'''disconnect from all groups'''
@@ -701,7 +705,8 @@ class ConnectionManager(object):
 
 	def sendCmd(self, *args):
 		'''Send data to socket'''
-		self.getGroup(self.user).wqueue.put_nowait(bytes(':'.join([str(i) for i in args])+"\r\n\x00", "utf-8"))
+		group = self.getGroup(self.user)
+		group.wqueue.put((group.chSocket, bytes(':'.join([str(i) for i in args])+"\r\n\x00", "utf-8")))
 
 	def manage(self, group, data):
 		buffer = data.split(b"\x00")
