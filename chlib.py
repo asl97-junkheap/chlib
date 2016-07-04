@@ -47,6 +47,7 @@ def getServer(group):
 
 class Generate:
 
+	@staticmethod
 	def aid(n, uid):
 		'''Generate anon ID'''
 		n, uid = str(n).split(".")[0], str(uid)  # Fault-Tolerance
@@ -62,6 +63,7 @@ class Generate:
 			an += str(int(i) + int(v))[-1]
 		return an
 
+	@staticmethod
 	def auth(pm):
 		'''Generate auth token'''
 		auth = urllib.request.urlopen("http://chatango.com/login",
