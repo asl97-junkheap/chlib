@@ -48,10 +48,15 @@ class SockManager:
 				if sock == self.interrupt_pipe_out:
 					os.read(sock, 1)
 					continue
-				*data, self.read_buf[sock] = (self.read_buf.get(sock, b'') + sock.recv(8192)).split(b'\x00')
-				for raw in data:
+				data = sock.recv(8192)
+				group = self.sock_to_group[sock]
+				if not data: 
+					self.mgr.removeGroup(group)
+					continue
+				*raws, self.read_buf[sock] = (self.read_buf.get(sock, b'') + data).split(b'\x00')
+				for raw in raws:
 					if raw:
-						self.jobmanager.addJob(self.mgr.acid.digest, self.sock_to_group[sock], raw)
+						self.jobmanager.addJob(self.mgr.acid.digest, group, raw)
 
 	def write_worker(self):
 		while True:
@@ -70,7 +75,6 @@ class SockManager:
 		return wrapped_sock
 
 	def remove(self, wrapped_sock):
-		self.mgr.removeGroup(wrapped_sock.group)
 		self.socks.remove(wrapped_sock.sock)
 
 
