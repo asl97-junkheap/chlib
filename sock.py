@@ -2,6 +2,7 @@ import queue
 import threading
 import select
 import os
+import time
 
 
 class JobManager:
@@ -42,6 +43,7 @@ class SockManager:
 		self.write_thread.start()
 
 	def read_worker(self):
+		last = time.time()
 		while True:
 			rd, _, _ = select.select(self.socks, [], [])
 			for sock in rd:
@@ -57,6 +59,11 @@ class SockManager:
 				for raw in raws:
 					if raw:
 						self.jobmanager.addJob(self.mgr.acid.digest, group, raw)
+			now = time.time()
+			dtime = now - last
+			if dtime < 0.1:
+				time.sleep(0.1-dtime)
+			last = now
 
 	def write_worker(self):
 		while True:
