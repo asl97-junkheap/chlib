@@ -9,7 +9,7 @@ class PingManager:
     def __init__(self, interval=20):
         self.interval = interval
         self.list_queue = collections.deque()
-        self.thread = threading.Thread(target=self.worker)
+        self.thread = threading.Thread(target=self.worker, name='ping thread')
         self.thread.daemon = True
         self.thread.start()
 

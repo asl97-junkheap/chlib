@@ -9,7 +9,7 @@ class JobManager:
 		self.tasks = queue.Queue()
 		self.threads = []
 		for l in range(5):
-			thread = threading.Thread(target=self.job_worker)
+			thread = threading.Thread(target=self.job_worker, name='job worker %d'%l)
 			thread.daemon = True
 			thread.start()
 			self.threads.append(thread)
@@ -34,10 +34,10 @@ class SockManager:
 		self.interrupt_pipe_out, self.interrupt_pipe_in = os.pipe()
 		self.socks.append(self.interrupt_pipe_out)
 		self.jobmanager = JobManager()
-		self.read_thread = threading.Thread(target=self.read_worker)
+		self.read_thread = threading.Thread(target=self.read_worker, name='sock read thread')
 		self.read_thread.daemon = True
 		self.read_thread.start()
-		self.write_thread = threading.Thread(target=self.write_worker)
+		self.write_thread = threading.Thread(target=self.write_worker, name='sock write thread')
 		self.write_thread.daemon = True
 		self.write_thread.start()
 
